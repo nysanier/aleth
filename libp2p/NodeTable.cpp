@@ -533,6 +533,25 @@ void NodeTable::onPacketReceived(
                 auto& in = dynamic_cast<PingNode&>(*packet);
                 in.source.setAddress(_from.address());
                 in.source.setUdpPort(_from.port());
+                
+                bool bNewNode = false;
+                {
+                    Guard l(x_nodes);
+                    auto const it = m_allNodes.find(in.sourceid);
+                    if (it == m_allNodes.end())
+                    {
+                        bNewNode = true;
+                    }
+                }
+                if (bNewNode)
+                {
+                    LOG(m_logger) << "Ping from new node (total new device ping count: " << ++m_newDevicePingCount << ": " << in.sourceid << "@" << in.endpoint();
+                }
+                else
+                {
+                    LOG(m_logger) << "Ping from known node: " << in.sourceid << "@" << in.endpoint();
+                }
+
                 if (addNode(Node(in.sourceid, in.source)))
                 {
                     // Send PONG response.

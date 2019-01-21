@@ -300,6 +300,8 @@ protected:
     bool m_allowLocalDiscovery;                                     ///< Allow nodes with local addresses to be included in the discovery process
 
     DeadlineOps m_timers; ///< this should be the last member - it must be destroyed first
+
+    unsigned short m_newDevicePingCount; /// Number of devices which have pinged us before we've pinged them
 };
 
 /**
