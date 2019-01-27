@@ -154,7 +154,7 @@ public:
         return m_allNodes.size();
     }
 
-    /// Returns snapshot of table.
+    /// Returns snapshot of table (buckets)
     std::list<NodeEntry> snapshot() const;
 
     /// Returns true if node id is in node table.

@@ -750,31 +750,39 @@ void Host::startedWorking()
     // initialization (e.g. start capability threads, start TCP listener, and kick off timers)
     asserts(!m_timer);
 
+    if (!m_capabilities.empty())
     {
-        // prevent m_run from being set to true at same time as set to false by stop()
-        // don't release mutex until m_timer is set so in case stop() is called at same
-        // time, stop will wait on m_timer and graceful network shutdown.
-        Guard l(x_runTimer);
-        // create deadline timer
-        m_timer.reset(new io::deadline_timer(m_ioService));
-        m_run = true;
-    }
+        {
+            // prevent m_run from being set to true at same time as set to false by stop()
+            // don't release mutex until m_timer is set so in case stop() is called at same
+            // time, stop will wait on m_timer and graceful network shutdown.
+            Guard l(x_runTimer);
+            // create deadline timer
+            m_timer.reset(new io::deadline_timer(m_ioService));
+            m_run = true;
+        }
 
-    // start capability threads (ready for incoming connections)
-    for (auto const& h: m_capabilities)
-        h.second->onStarting();
-    
-    // try to open acceptor (todo: ipv6)
-    int port = Network::tcp4Listen(m_tcp4Acceptor, m_netConfig);
-    if (port > 0)
-    {
-        m_listenPort = port;
-        determinePublic();
-        runAcceptor();
+        // start capability threads (ready for incoming connections)
+        for (auto const& h : m_capabilities)
+            h.second->onStarting();
+
+        // try to open acceptor (todo: ipv6)
+        auto const port = Network::tcp4Listen(m_tcp4Acceptor, m_netConfig);
+        if (port > 0)
+        {
+            m_listenPort = port;
+            determinePublic();
+            runAcceptor();
+        }
+        else
+            LOG(m_logger) << "p2p.start.notice id: " << id()
+                          << " TCP Listen port is invalid or unavailable.";
     }
     else
-        LOG(m_logger) << "p2p.start.notice id: " << id() << " TCP Listen port is invalid or unavailable.";
-
+    {
+        m_listenPort = m_netConfig.listenPort;
+        determinePublic();
+    }
     auto nodeTable = make_shared<NodeTable>(
         m_ioService,
         m_alias,
@@ -787,9 +795,13 @@ void Host::startedWorking()
         m_nodeTable = nodeTable;
     restoreNetwork(&m_restoreNetwork);
 
-    LOG(m_logger) << "p2p.started id: " << id();
-
-    run(boost::system::error_code());
+    if (!m_capabilities.empty())
+    {
+        LOG(m_logger) << "devp2p protocol started. Node id: " << id();
+        run(boost::system::error_code());
+    }
+    else
+        LOG(m_logger) << "devp2p procotol not started (no capabilities found).";
 }
 
 void Host::doWork()

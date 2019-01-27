@@ -182,7 +182,8 @@ public:
     /// Get the port we're listening on currently.
     unsigned short listenPort() const { return std::max(0, m_listenPort.load()); }
 
-    /// Serialise the set of known peers.
+    /// Serialise the set of known peers, known nodes in the node table, the devp2p protocol
+    /// version, and the node's public key
     bytes saveNetwork() const;
 
     // TODO: P2P this should be combined with peers into a HostStat object of some kind; coalesce data, as it's only used for status information.
