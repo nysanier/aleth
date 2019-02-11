@@ -82,6 +82,8 @@ void NodeTable::processEvents()
 
 bool NodeTable::addNode(Node const& _node)
 {
+    LOG(m_logger) << "Adding node " << _node;
+
     shared_ptr<NodeEntry> entry;
     DEV_GUARDED(x_nodes)
     {
@@ -103,6 +105,8 @@ bool NodeTable::addNode(Node const& _node)
 bool NodeTable::addKnownNode(
     Node const& _node, uint32_t _lastPongReceivedTime, uint32_t _lastPongSentTime)
 {
+    LOG(m_logger) << "Adding known node " << _node;
+
     shared_ptr<NodeEntry> entry;
     DEV_GUARDED(x_nodes)
     {
@@ -218,6 +222,8 @@ void NodeTable::doDiscover(NodeID _node, unsigned _round, shared_ptr<set<shared_
             // This prevents being considered invalid node and FindNode being ignored.
             if (!node->hasValidEndpointProof())
             {
+                LOG(m_logger) << "Node " << static_cast<Node const&>(*node)
+                              << " endpoint proof expired.";
                 ping(*node);
                 continue;
             }
@@ -325,6 +331,9 @@ void NodeTable::ping(NodeEntry const& _nodeEntry, boost::optional<NodeID> const&
         if (_ec || m_timers.isStopped())
             return;
 
+        if (contains(m_sentPings, _nodeEntry.id))
+            return;
+
         NodeIPEndpoint src;
         src = m_hostNodeEndpoint;
         PingNode p(src, _nodeEntry.endpoint);
@@ -344,6 +353,7 @@ void NodeTable::evict(NodeEntry const& _leastSeen, NodeEntry const& _new)
     if (!m_socket->isOpen())
         return;
 
+    LOG(m_logger) << "Evicting node " << static_cast<Node const&>(_leastSeen);
     ping(_leastSeen, _new.id);
 }
 
